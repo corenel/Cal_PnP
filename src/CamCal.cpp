@@ -1,4 +1,7 @@
 #include "CamCal.h"
+#include <cfloat>
+
+using namespace cv;
 
 C2dPtSel o2dPtSel;
 
@@ -9,9 +12,12 @@ void on_mouse(int event, int x, int y, int flags, void*)  // mouse event
 		std::cout << "Error: on_mouse(): frame image is unloaded" << std::endl;
 		return;
 	}
-
-	if (event == CV_EVENT_FLAG_LBUTTON)
+#if (CV_VERSION_MAJOR >= 4)
+	if (event == EVENT_FLAG_LBUTTON)
+#else
+        if (event == CV_EVENT_FLAG_LBUTTON)
 		o2dPtSel.addNd(x, y);
+#endif
 
 	return;
 }
@@ -308,16 +314,28 @@ void CCamCal::pltDispGrd(void)
 
 	// draw grid lines on the frame image
 	for (int i = 0; i < oDispGrdDim.width; i++)
-		cv::line(oImgPlt, vo2dGrdPtTop[i], vo2dGrdPtBtm[i], cv::Scalar(int(255.0 * ((double)i / (double)oDispGrdDim.width)), 127, 127), 2, CV_AA);
+#if (CV_VERSION_MAJOR >= 4)
+		cv::line(oImgPlt, vo2dGrdPtTop[i], vo2dGrdPtBtm[i], cv::Scalar(int(255.0 * ((double)i / (double)oDispGrdDim.width)), 127, 127), 2, LINE_AA);
+#else
+                cv::line(oImgPlt, vo2dGrdPtTop[i], vo2dGrdPtBtm[i], cv::Scalar(int(255.0 * ((double)i / (double)oDispGrdDim.width)), 127, 127), 2, CV_AA);
+#endif
 
 	for (int i = 0; i < oDispGrdDim.width; i++)
+#if (CV_VERSION_MAJOR >= 4)
+                cv::line(oImgPlt, vo2dGrdPtLft[i], vo2dGrdPtRgt[i], cv::Scalar(127, 127, int(255.0 * ((double)i / (double)oDispGrdDim.width))), 2, LINE_AA);
+#else
 		cv::line(oImgPlt, vo2dGrdPtLft[i], vo2dGrdPtRgt[i], cv::Scalar(127, 127, int(255.0 * ((double)i / (double)oDispGrdDim.width))), 2, CV_AA);
+#endif
 
 	// plot the 2D points
 	for (int i = 0; i < m_vo2dPt.size(); i++)
 	{
 		char acPtIdx[32];
-		cv::circle(oImgPlt, m_vo2dPt[i], 6, cv::Scalar(255, 0, 0), 1, CV_AA);  // draw the circle
+#if (CV_VERSION_MAJOR >= 4)
+		cv::circle(oImgPlt, m_vo2dPt[i], 6, cv::Scalar(255, 0, 0), 1, LINE_AA);  // draw the circle
+#else
+                cv::circle(oImgPlt, m_vo2dPt[i], 6, cv::Scalar(255, 0, 0), 1, CV_AA);  // draw the circle
+#endif
 		std::sprintf(acPtIdx, "%d", i);
 		cv::putText(oImgPlt, acPtIdx, m_vo2dPt[i], cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
 	}
@@ -334,12 +352,21 @@ void CCamCal::pltDispGrd(void)
 		o3dPtMat.at<double>(2, 0) = 1;
 		o2dPtMat = m_oHomoMat * o3dPtMat;
 
+#if (CV_VERSION_MAJOR >= 4)
 		cv::circle(oImgPlt, cv::Point2f((o2dPtMat.at<double>(0, 0) / o2dPtMat.at<double>(2, 0)), (o2dPtMat.at<double>(1, 0) / o2dPtMat.at<double>(2, 0))),
+			12, cv::Scalar(0, 0, 255), 1, LINE_AA);  // draw the circle
+#else
+                cv::circle(oImgPlt, cv::Point2f((o2dPtMat.at<double>(0, 0) / o2dPtMat.at<double>(2, 0)), (o2dPtMat.at<double>(1, 0) / o2dPtMat.at<double>(2, 0))),
 			12, cv::Scalar(0, 0, 255), 1, CV_AA);  // draw the circle
+#endif
 	}
 
 	// display plotted image
+#if (CV_VERSION_MAJOR >= 4)
+        cv::namedWindow("3D grid on the ground plane", WINDOW_NORMAL);
+#else
 	cv::namedWindow("3D grid on the ground plane", CV_WINDOW_NORMAL);
+#endif
 	cv::imshow("3D grid on the ground plane", oImgPlt);
 	cv::waitKey(0);
 	cv::destroyAllWindows();
@@ -383,7 +410,11 @@ std::vector<cv::Point> C2dPtSel::process(void)
 
 		cv::Mat oImgFrm = m_oImgFrm.clone();
 
+#if (CV_VERSION_MAJOR >= 4)
+                cv::namedWindow("selector of 2D points", WINDOW_NORMAL);
+#else
 		cv::namedWindow("selector of 2D points", CV_WINDOW_NORMAL);
+#endif
 		cv::imshow("selector of 2D points", m_oImgFrm);
 		cv::setMouseCallback("selector of 2D points", on_mouse);  // register for mouse event
 
@@ -426,7 +457,11 @@ void C2dPtSel::addNd(int nX, int nY)
 
 	m_voNd.push_back(oCurrNd);
 	// std::cout << "current node(" << oCurrNd.x << "," << oCurrNd.y << ")" << std::endl;	// for debug
+#if (CV_VERSION_MAJOR >= 4)
+        cv::circle(m_oImgFrm, oCurrNd, 6, cv::Scalar(255, 0, 0), 1, LINE_AA);  // draw the circle
+#else
 	cv::circle(m_oImgFrm, oCurrNd, 6, cv::Scalar(255, 0, 0), 1, CV_AA);  // draw the circle
+#endif
 	std::sprintf(acNdIdx, "%d", (int)(m_voNd.size() - 1));
 	cv::putText(m_oImgFrm, acNdIdx, oCurrNd, cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
 	cv::imshow("selector of 2D points", m_oImgFrm);
